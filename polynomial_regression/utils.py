@@ -181,8 +181,8 @@ def compare_polynomial_degrees(X_train: np.ndarray, y_train: np.ndarray,
     
     print("Comparing Polynomial Degrees")
     print("=" * 50)
-    print("Degree\tTrain R2\tTest R2\t\tTrain RMSE\tTest RMSE")
-    print("-" * 60)
+    print("Degree\tTrain R2\tTest R2\t\tTrain RMSE\tTest RMSE\tParameters")
+    print("-" * 70)
     
     for degree in degrees:
         model = PolynomialRegression(
@@ -204,31 +204,35 @@ def compare_polynomial_degrees(X_train: np.ndarray, y_train: np.ndarray,
         train_rmse = PolynomialRegressionMetrics.root_mean_squared_error(y_train, train_pred)
         test_rmse = PolynomialRegressionMetrics.root_mean_squared_error(y_test, test_pred)
         
+        n_params = len(model.weights) + (1 if model.fit_intercept else 0)
+        
         results.append({
             'degree': degree,
             'train_r2': train_r2,
             'test_r2': test_r2,
             'train_rmse': train_rmse,
-            'test_rmse': test_rmse
+            'test_rmse': test_rmse,
+            'n_params': n_params
         })
         
         models.append(model)
         
-        print(f"{degree}\t{train_r2:.4f}\t\t{test_r2:.4f}\t\t{train_rmse:.4f}\t\t{test_rmse:.4f}")
+        print(f"{degree}\t{train_r2:.4f}\t\t{test_r2:.4f}\t\t{train_rmse:.4f}\t\t{test_rmse:.4f}\t\t{n_params}")
     
     degrees_list = [r['degree'] for r in results]
     train_r2_scores = [r['train_r2'] for r in results]
     test_r2_scores = [r['test_r2'] for r in results]
     train_rmse_scores = [r['train_rmse'] for r in results]
     test_rmse_scores = [r['test_rmse'] for r in results]
+    n_params_list = [r['n_params'] for r in results]
     
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=figsize)
     
     ax1.plot(degrees_list, train_r2_scores, 'o-', label='Training', linewidth=2, markersize=8)
     ax1.plot(degrees_list, test_r2_scores, 's-', label='Test', linewidth=2, markersize=8)
-    ax1.set_title('R² Score vs Polynomial Degree')
+    ax1.set_title('R2 Score vs Polynomial Degree')
     ax1.set_xlabel('Polynomial Degree')
-    ax1.set_ylabel('R² Score')
+    ax1.set_ylabel('R2 Score')
     ax1.legend()
     ax1.grid(True, alpha=0.3)
     
@@ -240,16 +244,15 @@ def compare_polynomial_degrees(X_train: np.ndarray, y_train: np.ndarray,
     ax2.legend()
     ax2.grid(True, alpha=0.3)
     
-    if X_train.shape[1] == 1:
-        n_params = []
-        for degree in degrees_list:
-            n_params.append(degree + 1)  # degree + intercept
-        
-        ax3.bar(degrees_list, n_params, alpha=0.7, color='green')
-        ax3.set_title('Model Complexity (Number of Parameters)')
-        ax3.set_xlabel('Polynomial Degree')
-        ax3.set_ylabel('Number of Parameters')
-        ax3.grid(True, alpha=0.3)
+    ax3.bar(degrees_list, n_params_list, alpha=0.7, color='green')
+    ax3.set_title('Model Complexity (Number of Parameters)')
+    ax3.set_xlabel('Polynomial Degree')
+    ax3.set_ylabel('Number of Parameters')
+    ax3.grid(True, alpha=0.3)
+    
+    for i, (degree, n_params) in enumerate(zip(degrees_list, n_params_list)):
+        ax3.text(degree, n_params + max(n_params_list)*0.01, str(n_params), 
+                ha='center', va='bottom', fontsize=10)
     
     overfitting_scores = [train - test for train, test in zip(train_r2_scores, test_r2_scores)]
     ax4.bar(degrees_list, overfitting_scores, alpha=0.7, color='red')
